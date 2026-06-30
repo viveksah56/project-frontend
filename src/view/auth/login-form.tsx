@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
 import authService from "@/services/auth.service";
+import {toast} from "sonner";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -44,15 +45,23 @@ function LoginForm() {
   const rememberValue = watch("remember");
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      await authService.login(data);
-    } catch (error) {
-      console.error(error);
-    }
+    await authService.login(data)
+        .then(
+            (response) => {
+                console.log("Response from login page", response);
+            }
+        )
+        .catch(
+            (error) => {
+                console.error("Error from login page", error);
+            }
+        )
   };
 
-  const handleGoogleLogin = React.useCallback(() => {
-    console.log("Google authentication triggered");
+  const handleGoogleLogin = React.useCallback((tokenId:string) => {
+    authService.loginWithGoogle(tokenId).then((result) => {
+      toast.success(result.data.message|| "Login successful");
+    })
   }, []);
 
   const handleGithubLogin = React.useCallback(() => {
@@ -60,7 +69,7 @@ function LoginForm() {
   }, []);
 
   return (
-      <Card className="w-full max-w-[440px] border border-border/40 bg-card/60 backdrop-blur-md shadow-2xl shadow-neutral-950/10 dark:shadow-neutral-950/50 rounded-2xl p-2 sm:p-4">
+      <Card className="w-full max-w-110 border border-border/40 bg-card/60 backdrop-blur-md shadow-2xl shadow-neutral-950/10 dark:shadow-neutral-950/50 rounded-2xl p-2 sm:p-4">
         <CardHeader className="space-y-2 text-center pb-6">
           <CardTitle className="text-2xl font-semibold tracking-tight text-foreground bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text">
             Welcome back

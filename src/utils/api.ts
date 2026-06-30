@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, {AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig} from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -14,7 +14,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        console.log('Request initiated from:', config);
+        console.log('Request initiated from:', config.url);
         return config;
     },
     (error) =>{
@@ -29,8 +29,9 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error:any) => {
-        console.error('Error Response received from axiosInstance:', error);
-        return Promise.reject(error);
+        console.error('Request failed from axiosInstance:', error.response?.data || error.message);
+        const errorFormat=error.response?.data || error.message;
+        return Promise.reject(errorFormat);
     }
 );
 
