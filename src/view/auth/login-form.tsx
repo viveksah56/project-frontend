@@ -49,12 +49,12 @@ function LoginForm() {
     await authService.login(data)
         .then(
             (response) => {
-                console.log("Response from login page", response);
+                toast.success("Login successful!");
             }
         )
         .catch(
             (error) => {
-                console.error("Error from login page", error);
+                toast.error("Login failed. Please try again.");
             }
         )
   };
@@ -69,13 +69,9 @@ function LoginForm() {
       const result = await authService.loginWithGoogle(token);
       
       toast.success(result.data?.message || "Login successful with Google!");
-      console.log("[v0] Google login successful:", result);
-      
-      // Optional: Redirect or update app state here
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || "Google login failed. Please try again.";
       toast.error(errorMessage);
-      console.error("[v0] Google login error:", error);
     } finally {
       setIsGoogleLoading(false);
     }
