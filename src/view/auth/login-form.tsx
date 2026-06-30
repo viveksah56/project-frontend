@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
 import authService from "@/services/auth.service";
 import {toast} from "sonner";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -61,10 +61,10 @@ function LoginForm() {
 
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
 
-  const handleGoogleLogin = React.useCallback(async (credentialResponse: any) => {
+  const handleGoogleAuthSuccess = React.useCallback(async (tokenResponse: any) => {
     try {
       setIsGoogleLoading(true);
-      const token = credentialResponse.credential;
+      const token = tokenResponse.access_token;
       
       const result = await authService.loginWithGoogle(token);
       
@@ -80,6 +80,13 @@ function LoginForm() {
       setIsGoogleLoading(false);
     }
   }, []);
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleAuthSuccess,
+    onError: () => {
+      toast.error("Google login failed. Please try again.");
+    },
+  });
 
   const handleGithubLogin = React.useCallback(() => {
     console.log("GitHub authentication triggered");
@@ -198,18 +205,20 @@ function LoginForm() {
 
         <CardFooter className="flex flex-col gap-2.5 pt-2">
           <div className="grid grid-cols-2 gap-3 w-full">
-            <div className="h-10 w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleLogin}
-                onError={() => {
-                  toast.error("Google login failed. Please try again.");
-                }}
-                width="100%"
-                size="large"
-                theme="filled_blue"
-                text="signin_with"
-              />
-            </div>
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => googleLogin()}
+                disabled={isSubmitting || isGoogleLoading}
+                className="w-full h-10 font-medium bg-background/40 hover:bg-muted/60 transition-colors border-border/60 gap-2"
+            >
+              {isGoogleLoading ? (
+                  <IconLoader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                  <IconBrandGoogle className="h-4 w-4 text-muted-foreground" />
+              )}
+              Google
+            </Button>
             <Button
                 type="button"
                 variant="outline"
