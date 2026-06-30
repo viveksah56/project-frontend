@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
 import authService from "@/services/auth.service";
 import {toast} from "sonner";
+import { GoogleLogin } from "@react-oauth/google";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -58,10 +59,26 @@ function LoginForm() {
         )
   };
 
-  const handleGoogleLogin = React.useCallback((tokenId:string) => {
-    authService.loginWithGoogle(tokenId).then((result) => {
-      toast.success(result.data.message|| "Login successful");
-    })
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
+
+  const handleGoogleLogin = React.useCallback(async (credentialResponse: any) => {
+    try {
+      setIsGoogleLoading(true);
+      const token = credentialResponse.credential;
+      
+      const result = await authService.loginWithGoogle(token);
+      
+      toast.success(result.data?.message || "Login successful with Google!");
+      console.log("[v0] Google login successful:", result);
+      
+      // Optional: Redirect or update app state here
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Google login failed. Please try again.";
+      toast.error(errorMessage);
+      console.error("[v0] Google login error:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   }, []);
 
   const handleGithubLogin = React.useCallback(() => {
@@ -181,16 +198,18 @@ function LoginForm() {
 
         <CardFooter className="flex flex-col gap-2.5 pt-2">
           <div className="grid grid-cols-2 gap-3 w-full">
-            <Button
-                type="button"
-                variant="outline"
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-                className="w-full h-10 font-medium bg-background/40 hover:bg-muted/60 transition-colors border-border/60 gap-2"
-            >
-              <IconBrandGoogle className="h-4 w-4 text-muted-foreground" />
-              Google
-            </Button>
+            <div className="h-10 w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => {
+                  toast.error("Google login failed. Please try again.");
+                }}
+                width="100%"
+                size="large"
+                theme="filled_blue"
+                text="signin_with"
+              />
+            </div>
             <Button
                 type="button"
                 variant="outline"
