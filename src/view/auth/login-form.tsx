@@ -19,12 +19,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
+import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail, IconAlertCircle } from "@tabler/icons-react";
+import { toast } from "sonner";
 import authService from "@/services/auth.service";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+interface AuthErrorResponse {
+  status?: number;
+  message: string;
+  code?: string;
+}
+
 function LoginForm() {
+  const [serverError, setServerError] = React.useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -44,10 +52,22 @@ function LoginForm() {
   const rememberValue = watch("remember");
 
   const onSubmit = async (data: LoginFormData) => {
+    setServerError(null);
     try {
-      await authService.login(data);
-    } catch (error) {
-      console.error(error);
+      const response = await authService.login(data);
+      if (response.success) {
+        toast.success("Login successful! Redirecting...");
+      } else {
+        const errorMsg = response.message || "Login failed. Please try again.";
+        setServerError(errorMsg);
+        toast.error(errorMsg);
+      }
+    } catch (error: unknown) {
+      const authError = error as AuthErrorResponse;
+      const errorMsg = authError?.message || "An unexpected error occurred. Please try again.";
+      setServerError(errorMsg);
+      toast.error(errorMsg);
+      console.error("[LoginForm] Error during login:", error);
     }
   };
 
@@ -71,6 +91,12 @@ function LoginForm() {
         </CardHeader>
 
         <CardContent className="pb-4">
+          {serverError && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex gap-2 items-start">
+              <IconAlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">{serverError}</p>
+            </div>
+          )}
           <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email-input" className={cn(errors.email && "text-destructive")}>

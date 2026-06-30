@@ -14,22 +14,29 @@ const axiosInstance: AxiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        console.log('Request initiated from:', config);
+        console.log(`[API] ${config.method?.toUpperCase()} request to: ${config.url}`);
         return config;
     },
-    (error) =>{
-        console.error('Request failed from axiosInstance:', error);
+    (error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Request configuration error';
+        console.error('[API] Request setup failed:', message);
         return Promise.reject(error);
     }
 );
 
 axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => {
-        console.log('Response received from axiosInstance:', response);
+        console.log(
+            `[API] Response received: ${response.status} from ${response.config.url}`
+        );
         return response;
     },
-    (error:any) => {
-        console.error('Error Response received from axiosInstance:', error);
+    (error: unknown) => {
+        if (error instanceof Error) {
+            console.error('[API] Response error:', error.message);
+        } else {
+            console.error('[API] Response error: Unknown error occurred');
+        }
         return Promise.reject(error);
     }
 );

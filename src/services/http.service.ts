@@ -52,7 +52,8 @@ class HttpService {
             const axiosConfig = this.buildAxiosConfig(config);
             const response = await axiosInstance.post<TResponse>(url, data, axiosConfig);
             return response.data;
-        } catch (error) {
+        } catch (error: unknown) {
+            console.error(`[HttpService] POST request failed for ${url}:`, error);
             throw error;
         }
     }
