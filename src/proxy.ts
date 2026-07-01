@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
     const isAdminRoute = pathname.startsWith("/admin");
     const isUserRoute = pathname.startsWith("/user");
     const isAuthRoute =
-        pathname === "/login" || pathname === "/register" || pathname.startsWith("/auth");
+        pathname === "/login" || pathname === "/register" || pathname.startsWith("/auth") || pathname === "/verify-email";
 
     if ((isAdminRoute || isUserRoute) && !token) {
         return NextResponse.redirect(new URL("/login", request.url));
