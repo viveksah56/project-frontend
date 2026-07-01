@@ -30,18 +30,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize user from localStorage on mount
+  // Initialize user from cookies on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-
-    if (storedUser && hasTokens()) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("[v0] Failed to parse stored user:", error);
-        clearTokens();
-        localStorage.removeItem("user");
-      }
+    if (hasTokens()) {
+      // User data can be reconstructed from token claims if needed
+      // For now, we just verify tokens exist
+      setUser(null); // Will be set properly by context after login
     }
     setIsLoading(false);
   }, []);
@@ -49,7 +43,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = () => {
     setUser(null);
     clearTokens();
-    localStorage.removeItem("user");
   };
 
   const hasRole = (role: UserRole | UserRole[]): boolean => {

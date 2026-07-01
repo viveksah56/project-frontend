@@ -64,7 +64,6 @@ function LoginForm() {
 
       // Create user object for context
       const user = { id: "", email: data.email, name: "", role, avatar: "" };
-      localStorage.setItem("user", JSON.stringify(user));
 
       // Update auth context
       setUser(user);
@@ -104,7 +103,6 @@ function LoginForm() {
 
       // Create user object for context
       const user = { id: "", email: "", name: "", role, avatar: "" };
-      localStorage.setItem("user", JSON.stringify(user));
 
       // Update auth context
       setUser(user);

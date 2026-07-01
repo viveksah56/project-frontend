@@ -13,7 +13,6 @@ export interface TokenPair {
 
 /**
  * Store tokens securely in httpOnly cookies via document.cookie
- * and in localStorage as backup
  */
 export function setTokens(
   accessToken: string,
@@ -22,37 +21,23 @@ export function setTokens(
 ): void {
   const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 24 * 60 * 60; // 7 days or 24 hours
 
-  // Store in secure cookies
+  // Store in secure cookies only
   document.cookie = `${TOKEN_KEY}=${accessToken}; path=/; max-age=${maxAge}; SameSite=Strict; Secure`;
   document.cookie = `${REFRESH_TOKEN_KEY}=${refreshToken}; path=/; max-age=${maxAge}; SameSite=Strict; Secure`;
-
-  // Backup in localStorage
-  localStorage.setItem(TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 /**
- * Retrieve access token from cookies or localStorage
+ * Retrieve access token from cookies
  */
 export function getAccessToken(): string | null {
-  // Try cookies first
-  const cookieToken = getCookieValue(TOKEN_KEY);
-  if (cookieToken) return cookieToken;
-
-  // Fallback to localStorage
-  return localStorage.getItem(TOKEN_KEY);
+  return getCookieValue(TOKEN_KEY);
 }
 
 /**
- * Retrieve refresh token from cookies or localStorage
+ * Retrieve refresh token from cookies
  */
 export function getRefreshToken(): string | null {
-  // Try cookies first
-  const cookieToken = getCookieValue(REFRESH_TOKEN_KEY);
-  if (cookieToken) return cookieToken;
-
-  // Fallback to localStorage
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return getCookieValue(REFRESH_TOKEN_KEY);
 }
 
 /**
@@ -68,16 +53,11 @@ export function getTokens(): TokenPair | null {
 }
 
 /**
- * Clear all tokens from cookies and localStorage
+ * Clear all tokens from cookies
  */
 export function clearTokens(): void {
-  // Clear cookies
   document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
   document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0`;
-
-  // Clear localStorage
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 /**
