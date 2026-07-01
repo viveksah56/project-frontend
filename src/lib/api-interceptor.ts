@@ -1,10 +1,10 @@
 /**
  * API Interceptor with Token Management
- * Automatically handles JWT token injection and refresh logic
+ * Automatically handles JWT token injection and refresh logic using js-cookie
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from "axios";
-import { getAccessToken, getRefreshToken, setTokens, clearTokens, isTokenExpired } from "./token";
+import { getAccessToken, getRefreshToken, setToken, clearTokens, getRole, type UserRole } from "./token";
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -91,9 +91,10 @@ api.interceptors.response.use(
         );
 
         const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
+        const role = getRole() as UserRole;
 
-        // Update tokens
-        setTokens(accessToken, newRefreshToken);
+        // Update tokens using js-cookie
+        setToken({ accessToken, refreshToken: newRefreshToken }, role);
 
         // Update authorization header
         api.defaults.headers.Authorization = `Bearer ${accessToken}`;

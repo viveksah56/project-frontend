@@ -1,10 +1,15 @@
 /**
- * Token Management Utility
- * Handles secure storage and retrieval of JWT tokens with refresh logic
+ * Token Management Utility using js-cookie
+ * Handles secure storage and retrieval of JWT tokens with RBAC support
  */
 
-const TOKEN_KEY = "accessToken";
-const REFRESH_TOKEN_KEY = "refreshToken";
+import Cookies from "js-cookie";
+
+export type UserRole = "admin" | "professional" | "user";
+
+export const TOKEN_KEY = "_token";
+export const REFRESH_TOKEN_KEY = "_refreshToken";
+export const ROLE_KEY = "_role";
 
 export interface TokenPair {
   accessToken: string;
@@ -12,38 +17,50 @@ export interface TokenPair {
 }
 
 /**
- * Store tokens securely in httpOnly cookies via document.cookie
+ * Store tokens and role securely using js-cookie
  */
-export function setTokens(
-  accessToken: string,
-  refreshToken: string,
-  rememberMe: boolean = false
-): void {
-  const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 24 * 60 * 60; // 7 days or 24 hours
+export function setToken(tokenPair: TokenPair, role?: UserRole, rememberMe: boolean = false): void {
+  const expires = rememberMe ? 7 : 1; // 7 days or 1 day
 
-  // Store in secure cookies only
-  document.cookie = `${TOKEN_KEY}=${accessToken}; path=/; max-age=${maxAge}; SameSite=Strict; Secure`;
-  document.cookie = `${REFRESH_TOKEN_KEY}=${refreshToken}; path=/; max-age=${maxAge}; SameSite=Strict; Secure`;
+  Cookies.set(TOKEN_KEY, tokenPair.accessToken, {
+    expires,
+    secure: true,
+    sameSite: "strict",
+  });
+
+  Cookies.set(REFRESH_TOKEN_KEY, tokenPair.refreshToken, {
+    expires,
+    secure: true,
+    sameSite: "strict",
+  });
+
+  if (role) {
+    Cookies.set(ROLE_KEY, role, {
+      expires,
+      secure: true,
+      sameSite: "strict",
+    });
+  }
 }
 
 /**
  * Retrieve access token from cookies
  */
 export function getAccessToken(): string | null {
-  return getCookieValue(TOKEN_KEY);
+  return Cookies.get(TOKEN_KEY) || null;
 }
 
 /**
  * Retrieve refresh token from cookies
  */
 export function getRefreshToken(): string | null {
-  return getCookieValue(REFRESH_TOKEN_KEY);
+  return Cookies.get(REFRESH_TOKEN_KEY) || null;
 }
 
 /**
  * Get token pair for API calls
  */
-export function getTokens(): TokenPair | null {
+export function getToken(): TokenPair | null {
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
 
@@ -53,11 +70,19 @@ export function getTokens(): TokenPair | null {
 }
 
 /**
+ * Get user role from cookies
+ */
+export function getRole(): UserRole | null {
+  return (Cookies.get(ROLE_KEY) as UserRole) || null;
+}
+
+/**
  * Clear all tokens from cookies
  */
 export function clearTokens(): void {
-  document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
-  document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0`;
+  Cookies.remove(TOKEN_KEY);
+  Cookies.remove(REFRESH_TOKEN_KEY);
+  Cookies.remove(ROLE_KEY);
 }
 
 /**
@@ -96,14 +121,4 @@ export function isTokenExpired(token: string): boolean {
 
   const expirationTime = payload.exp * 1000; // Convert to milliseconds
   return Date.now() >= expirationTime;
-}
-
-/**
- * Get cookie value by name
- */
-function getCookieValue(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
 }

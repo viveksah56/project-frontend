@@ -22,10 +22,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
 import authService from "@/services/auth.service";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/context/auth.context";
-import { setTokens } from "@/lib/token";
+import { setToken, type UserRole } from "@/lib/token";
+import Cookies from "js-cookie";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -56,11 +57,12 @@ function LoginForm() {
       const response = await authService.login(data);
       const { role, tokens } = response.data;
 
-      // Store tokens (access and refresh) in secure cookies
-      setTokens(tokens.accessToken, tokens.refreshToken, rememberValue);
-
-      // Store user role in cookie for middleware
-      document.cookie = `userRole=${role}; path=/; SameSite=Strict; Secure`;
+      // Store tokens and role using js-cookie
+      setToken(
+        { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
+        role as UserRole,
+        rememberValue
+      );
 
       // Create user object for context
       const user = { id: "", email: data.email, name: "", role, avatar: "" };
@@ -71,12 +73,12 @@ function LoginForm() {
       toast.success("Login successful!");
 
       // Redirect to appropriate dashboard based on role
-      const roleRoutes: Record<string, string> = {
+      const roleRoutes: Record<UserRole, string> = {
         admin: "/dashboard/admin",
         professional: "/dashboard/professional",
         user: "/dashboard/user",
       };
-      const dashboardRoute = roleRoutes[role] || "/dashboard/user";
+      const dashboardRoute = roleRoutes[role as UserRole] || "/dashboard/user";
 
       setTimeout(() => router.push(dashboardRoute), 100);
     } catch (error: any) {
@@ -95,11 +97,12 @@ function LoginForm() {
       const result = await authService.loginWithGoogle(googleToken);
       const { role, tokens } = result.data;
 
-      // Store tokens (access and refresh) in secure cookies
-      setTokens(tokens.accessToken, tokens.refreshToken, true);
-
-      // Store user role in cookie for middleware
-      document.cookie = `userRole=${role}; path=/; SameSite=Strict; Secure`;
+      // Store tokens and role using js-cookie
+      setToken(
+        { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
+        role as UserRole,
+        true // Remember for 7 days
+      );
 
       // Create user object for context
       const user = { id: "", email: "", name: "", role, avatar: "" };
@@ -110,12 +113,12 @@ function LoginForm() {
       toast.success("Login successful with Google!");
 
       // Redirect to appropriate dashboard based on role
-      const roleRoutes: Record<string, string> = {
+      const roleRoutes: Record<UserRole, string> = {
         admin: "/dashboard/admin",
         professional: "/dashboard/professional",
         user: "/dashboard/user",
       };
-      const dashboardRoute = roleRoutes[role] || "/dashboard/user";
+      const dashboardRoute = roleRoutes[role as UserRole] || "/dashboard/user";
 
       setTimeout(() => router.push(dashboardRoute), 100);
     } catch (error: any) {

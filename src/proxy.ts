@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export type UserRole = "admin" | "professional" | "user";
 
+const TOKEN_KEY = "_token";
+const ROLE_KEY = "_role";
+
 interface RouteConfig {
   public: string[];
   protected: string[];
@@ -20,8 +23,8 @@ const routeConfig: RouteConfig = {
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const accessToken = request.cookies.get("accessToken")?.value;
-  const userRole = request.cookies.get("userRole")?.value as UserRole | undefined;
+  const accessToken = request.cookies.get(TOKEN_KEY)?.value;
+  const userRole = request.cookies.get(ROLE_KEY)?.value as UserRole | undefined;
 
   // Allow public routes
   const isPublicRoute = routeConfig.public.some(
