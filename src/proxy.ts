@@ -20,7 +20,7 @@ const routeConfig: RouteConfig = {
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const token = request.cookies.get("token")?.value;
+  const accessToken = request.cookies.get("accessToken")?.value;
   const userRole = request.cookies.get("userRole")?.value as UserRole | undefined;
 
   // Allow public routes
@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
 
   if (isPublicRoute) {
     // Redirect authenticated users away from auth pages
-    if (token && pathname.startsWith("/auth/")) {
+    if (accessToken && pathname.startsWith("/auth/")) {
       const dashboardUrl = getDashboardByRole(userRole);
       return NextResponse.redirect(new URL(dashboardUrl, request.url));
     }
@@ -38,7 +38,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Redirect unauthenticated users to login
-  if (!token) {
+  if (!accessToken) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 

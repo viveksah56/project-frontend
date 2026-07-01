@@ -25,6 +25,7 @@ import authService from "@/services/auth.service";
 import {toast} from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/context/auth.context";
+import { setTokens } from "@/lib/token";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -53,13 +54,17 @@ function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const response = await authService.login(data);
-      const { user, token } = response.data;
+      const { role, tokens } = response.data;
 
-      // Store token and user info in cookies and localStorage
-      document.cookie = `token=${token}; path=/; max-age=${rememberValue ? 7 * 24 * 60 * 60 : 24 * 60 * 60}`;
-      document.cookie = `userRole=${user.role}; path=/`;
+      // Store tokens (access and refresh) in secure cookies
+      setTokens(tokens.accessToken, tokens.refreshToken, rememberValue);
+
+      // Store user role in cookie for middleware
+      document.cookie = `userRole=${role}; path=/; SameSite=Strict; Secure`;
+
+      // Create user object for context
+      const user = { id: "", email: data.email, name: "", role, avatar: "" };
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", token);
 
       // Update auth context
       setUser(user);
@@ -72,7 +77,7 @@ function LoginForm() {
         professional: "/dashboard/professional",
         user: "/dashboard/user",
       };
-      const dashboardRoute = roleRoutes[user.role] || "/dashboard/user";
+      const dashboardRoute = roleRoutes[role] || "/dashboard/user";
 
       setTimeout(() => router.push(dashboardRoute), 100);
     } catch (error: any) {
@@ -86,16 +91,20 @@ function LoginForm() {
   const handleGoogleAuthSuccess = React.useCallback(async (tokenResponse: any) => {
     try {
       setIsGoogleLoading(true);
-      const token = tokenResponse.access_token;
-      
-      const result = await authService.loginWithGoogle(token);
-      const { user, token: authToken } = result.data;
+      const googleToken = tokenResponse.access_token;
 
-      // Store token and user info in cookies and localStorage
-      document.cookie = `token=${authToken}; path=/; max-age=${7 * 24 * 60 * 60}`;
-      document.cookie = `userRole=${user.role}; path=/`;
+      const result = await authService.loginWithGoogle(googleToken);
+      const { role, tokens } = result.data;
+
+      // Store tokens (access and refresh) in secure cookies
+      setTokens(tokens.accessToken, tokens.refreshToken, true);
+
+      // Store user role in cookie for middleware
+      document.cookie = `userRole=${role}; path=/; SameSite=Strict; Secure`;
+
+      // Create user object for context
+      const user = { id: "", email: "", name: "", role, avatar: "" };
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", authToken);
 
       // Update auth context
       setUser(user);
@@ -108,7 +117,7 @@ function LoginForm() {
         professional: "/dashboard/professional",
         user: "/dashboard/user",
       };
-      const dashboardRoute = roleRoutes[user.role] || "/dashboard/user";
+      const dashboardRoute = roleRoutes[role] || "/dashboard/user";
 
       setTimeout(() => router.push(dashboardRoute), 100);
     } catch (error: any) {

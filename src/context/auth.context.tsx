@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { clearTokens, hasTokens } from "@/lib/token";
 
 export type UserRole = "admin" | "professional" | "user";
 
@@ -29,17 +30,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-    
-    if (storedUser && token) {
+
+    if (storedUser && hasTokens()) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error("Failed to parse stored user:", error);
+        console.error("[v0] Failed to parse stored user:", error);
+        clearTokens();
         localStorage.removeItem("user");
-        localStorage.removeItem("token");
       }
     }
     setIsLoading(false);
@@ -47,8 +48,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = () => {
     setUser(null);
+    clearTokens();
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
   };
 
   const hasRole = (role: UserRole | UserRole[]): boolean => {
