@@ -128,8 +128,8 @@ function LoginForm() {
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "email-error" : undefined}
                   className={cn(
-                      "h-10 px-3 bg-background/50 transition-all duration-200 border-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring",
-                      errors.email && "border-destructive focus-visible:ring-destructive focus-visible:border-destructive"
+                      "h-10 px-3 bg-background/50 transition-all duration-200 border-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring shadow-sm shadow-neutral-950/5 focus-visible:shadow-md focus-visible:shadow-primary/10",
+                      errors.email && "border-destructive focus-visible:ring-destructive focus-visible:border-destructive focus-visible:shadow-destructive/10"
                   )}
               />
               {errors.email?.message && (
