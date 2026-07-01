@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,10 +24,14 @@ import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler
 import authService from "@/services/auth.service";
 import {toast} from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
+import { useAuth } from "@/context/auth.context";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 function LoginForm() {
+  const router = useRouter();
+  const { setUser } = useAuth();
+
   const {
     register,
     handleSubmit,
@@ -46,17 +51,34 @@ function LoginForm() {
   const rememberValue = watch("remember");
 
   const onSubmit = async (data: LoginFormData) => {
-    await authService.login(data)
-        .then(
-            (response) => {
-                toast.success("Login successful!");
-            }
-        )
-        .catch(
-            (error) => {
-                toast.error("Login failed. Please try again.");
-            }
-        )
+    try {
+      const response = await authService.login(data);
+      const { user, token } = response.data;
+
+      // Store token and user info in cookies and localStorage
+      document.cookie = `token=${token}; path=/; max-age=${rememberValue ? 7 * 24 * 60 * 60 : 24 * 60 * 60}`;
+      document.cookie = `userRole=${user.role}; path=/`;
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+
+      // Update auth context
+      setUser(user);
+
+      toast.success("Login successful!");
+
+      // Redirect to appropriate dashboard based on role
+      const roleRoutes: Record<string, string> = {
+        admin: "/dashboard/admin",
+        professional: "/dashboard/professional",
+        user: "/dashboard/user",
+      };
+      const dashboardRoute = roleRoutes[user.role] || "/dashboard/user";
+
+      setTimeout(() => router.push(dashboardRoute), 100);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
+    }
   };
 
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
@@ -67,15 +89,35 @@ function LoginForm() {
       const token = tokenResponse.access_token;
       
       const result = await authService.loginWithGoogle(token);
-      
-      toast.success(result.data?.message || "Login successful with Google!");
+      const { user, token: authToken } = result.data;
+
+      // Store token and user info in cookies and localStorage
+      document.cookie = `token=${authToken}; path=/; max-age=${7 * 24 * 60 * 60}`;
+      document.cookie = `userRole=${user.role}; path=/`;
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", authToken);
+
+      // Update auth context
+      setUser(user);
+
+      toast.success("Login successful with Google!");
+
+      // Redirect to appropriate dashboard based on role
+      const roleRoutes: Record<string, string> = {
+        admin: "/dashboard/admin",
+        professional: "/dashboard/professional",
+        user: "/dashboard/user",
+      };
+      const dashboardRoute = roleRoutes[user.role] || "/dashboard/user";
+
+      setTimeout(() => router.push(dashboardRoute), 100);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || "Google login failed. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsGoogleLoading(false);
     }
-  }, []);
+  }, [router, setUser]);
 
   const googleLogin = useGoogleLogin({
     onSuccess: handleGoogleAuthSuccess,
