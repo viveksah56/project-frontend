@@ -1,7 +1,8 @@
 import Cookies from "js-cookie";
-import { TOKEN_KEY } from "@/utils/constant";
+
 import axiosInstance from "@/utils/api";
 import { AxiosRequestConfig } from "axios";
+import {TOKEN_KEY} from "@/lib/token";
 
 interface HeaderConfigProps {
     auth?: boolean;

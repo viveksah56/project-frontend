@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,11 +22,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { IconBrandGithub, IconBrandGoogle, IconLoader2, IconMail } from "@tabler/icons-react";
 import authService from "@/services/auth.service";
-import {toast} from "sonner";
+import { toast } from "sonner";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import Cookies from "js-cookie";
+import {setToken, TOKEN_KEY} from "@/lib/token";
+
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 function LoginForm() {
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
@@ -44,28 +51,54 @@ function LoginForm() {
 
   const rememberValue = watch("remember");
 
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
+  const handleRoleBasedRedirect = () => {
+    const role = Cookies.get("_userRole");
+    toast.success("Logged in successfully");
+
+    if (role === "admin") {
+      router.replace("/admin/dashboard");
+    } else {
+      router.replace("/user/dashboard");
+    }
+  };
   const onSubmit = async (data: LoginFormData) => {
-    await authService.login(data)
-        .then(
-            (response) => {
-                console.log("Response from login page", response);
-            }
-        )
-        .catch(
-            (error) => {
-                console.error("Error from login page", error);
-            }
-        )
+    try {
+     const response = await authService.login(data);
+      handleRoleBasedRedirect();
+     console.log("Response",response.tokens);
+
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Invalid email or password.";
+      toast.error(errorMessage);
+    }
   };
 
-  const handleGoogleLogin = React.useCallback((tokenId:string) => {
-    authService.loginWithGoogle(tokenId).then((result) => {
-      toast.success(result.data.message|| "Login successful");
-    })
-  }, []);
+  const handleGoogleAuthSuccess = React.useCallback(
+      async (credentialResponse: CredentialResponse) => {
+        const idToken = credentialResponse.credential;
+        console.log("ID TOKEN", idToken);
+
+        if (!idToken) {
+          toast.error("Google login failed. Please try again.");
+          return;
+        }
+
+        try {
+          setIsGoogleLoading(true);
+          await authService.loginWithGoogle(idToken);
+        } catch (error: any) {
+          const errorMessage = error?.message || "Google login failed. Please try again.";
+          toast.error(errorMessage);
+        } finally {
+          setIsGoogleLoading(false);
+        }
+      },
+      [router]
+  );
 
   const handleGithubLogin = React.useCallback(() => {
-    console.log("GitHub authentication triggered");
+    toast.info("GitHub login is coming soon.");
   }, []);
 
   return (
@@ -181,16 +214,28 @@ function LoginForm() {
 
         <CardFooter className="flex flex-col gap-2.5 pt-2">
           <div className="grid grid-cols-2 gap-3 w-full">
-            <Button
-                type="button"
-                variant="outline"
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-                className="w-full h-10 font-medium bg-background/40 hover:bg-muted/60 transition-colors border-border/60 gap-2"
-            >
-              <IconBrandGoogle className="h-4 w-4 text-muted-foreground" />
-              Google
-            </Button>
+            <div className="relative w-full h-10">
+              <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting || isGoogleLoading}
+                  className="w-full h-10 font-medium bg-background/40 hover:bg-muted/60 transition-colors border-border/60 gap-2"
+              >
+                {isGoogleLoading ? (
+                    <IconLoader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                    <IconBrandGoogle className="h-4 w-4 text-muted-foreground" />
+                )}
+                Google
+              </Button>
+              <div className="absolute inset-0 opacity-0 [&>div]:w-full [&>div]:h-full [&_iframe]:w-full! [&_iframe]:h-full!">
+                <GoogleLogin
+                    onSuccess={handleGoogleAuthSuccess}
+                    onError={() => toast.error("Google login failed. Please try again.")}
+                    width="100%"
+                />
+              </div>
+            </div>
             <Button
                 type="button"
                 variant="outline"

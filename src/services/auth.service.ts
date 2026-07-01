@@ -9,10 +9,10 @@ class AuthService {
         });
     }
 
-    async loginWithGoogle(tokedId:string):Promise<any>{
+    async loginWithGoogle(tokenId: string): Promise<any> {
         return await httpService.postRequest({
             url: "/auth/google",
-            data: {tokenId: tokedId},
+            data: { idToken: tokenId },
         });
     }
 }
